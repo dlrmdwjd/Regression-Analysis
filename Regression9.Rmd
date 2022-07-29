@@ -1,0 +1,175 @@
+---
+title: "Regression9"
+author: "dlrmdwjd"
+date: "2022-07-19"
+output: word_document
+---
+
+```{r}
+ex<-read.table("CH09TA01.txt")
+names(ex)<-c("X1","X2","X3","X4","X5","X6","X7","X8","Y","logY")
+X<-cbind(1, ex$X1,ex$X2,ex$X3,ex$X4)
+Y<-ex$Y; logY<-ex$logY
+boxplot(ex$logY)
+par(mfrow=c(1,2))
+hist(ex$Y); hist(ex$logY);
+
+#### logy가 확연하게 정규분포에 가까운 symmetric type, logY 사용이 바람직함
+#### boxplot의 형태도 symmetric
+
+dim(ex)
+#### ~하고 1 쓰면 No predict model
+reg0 <- lm(Y~1, data=ex) ; reg0.ln<-lm(logY~1,data=ex)
+summary(reg0)
+summary(reg0.ln)
+
+reg1<-lm(Y~X1+X2+X3+X4, data=ex); reg2<-lm(logY~X1+X2+X3+X4, data=ex)
+reg3<- lm(logY~X1+X2+X3+X4+X1:X2, data=ex)
+
+#### reg3은 interaction 꺄지 포함
+
+summary(reg1)
+summary(reg2)
+summary(reg3)
+
+#### 유의성은 reg1이나 reg2나 같음
+
+par(mfrow=c(2,2))
+plot(reg1);plot(reg2)
+
+#### see qqplot, 정규성이 의심되는 outlier가 존재, 등분산성이 깨지는 형태, 등분산성 검정이 필요
+
+library(car)
+
+ncvTest(reg1)
+
+#### 귀무가설 기각해야하고 등분산성이 깨진다.
+
+boxCox(reg1); powerTransform(reg1)
+
+cor(ex[,c(1:4, 10)])
+#### column을 뽑아내야하므로
+
+cor(ex[,c(10,1:4)])
+
+#### draw scatter plot
+pairs(ex[,c(10,1:4)])
+
+```
+
+```{r}
+#### extract AIC function, return AIC
+
+extractAIC(reg3)
+
+#### 추정해야할 모수의 갯수와 AIC return
+
+extractAIC(reg2)
+
+#### reg2가 reg3보다 더 값이 작으므로 reg2가 더 나은 모형이라 할 수 있다.
+
+extractAIC(reg1)
+
+#### reg2 reg3 이랑 reg1은 비교 불가. scale이 다르기 때문에
+
+#### BIC는 AIC에서 옵션만 변경!
+
+extractAIC(reg3, k=log(dim(reg3$model)[1]))
+
+#### k = log(samplesize)로 작성하면 됨
+
+#### BIC도 reg3보단 reg2가 낫다고 알려주는중
+
+
+```
+
+```{r}
+## Mallow cp
+
+#### scale이 MSE 
+
+extractAIC(reg2, scale = sigmaHat(reg3)^2)
+
+#### sigmaHat에 reg3이 들어간 이유는 지금 구하는 것 보다 더 큰 model값을 넣어주면 됨
+
+extractAIC(reg3, scale = sigmaHat(reg3)^2)
+```
+
+```{r}
+## press function
+
+### 따로 function이 존재하지 않으므로 코드를 직접 작성해야함.
+
+PRESS <- function(lm.object){
+sum( (residuals(lm.object)/(1 - hatvalues(lm.object)))^2 )}
+PRESS(reg3); PRESS(reg2)
+
+#### press도 reg3이 더 작으므로 reg3이 나은모델
+```
+
+```{r}
+## stepwise selection
+
+#### forward는 한없이 커질 수 있어서 변수를 지정해줘야함. direction에 both 하면 forward stepwise된다. 그냥 forward이면 forward selection, backward이면 backward selection. 기본 criterion 값은 AIC를 이용한다
+
+step(reg0.ln,direction = "both", scope = list(lower=~1, upper = ~X1*X2+X3+X4))
+#### X3으로 시작, X3+X2+X1 까지. 마지막에 final model report
+
+step(reg0.ln,direction = "forward", scope = list(lower=~1, upper = ~X1*X2+X3+X4))
+step(reg3,direction = "backward")
+
+```
+
+```{r}
+## 전체 모형을 추정하기
+### both
+reg.all <-lm(logY~X1+X2+X3+X4+X5+X6+X7+X8, data=ex)
+step (reg0.ln, direction="both",
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+step (reg0.ln, direction="both", k=log(dim(reg.all$model)[1]) ,
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+step (reg0.ln, direction="both", scale=sigmaHat(reg.all)^2 ,
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+
+### forward
+
+step (reg0.ln, direction="forward",
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+step (reg0.ln, direction="forward", k=log(dim(reg.all$model)[1]) ,
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+step (reg0.ln, direction="forward", scale=sigmaHat(reg.all)^2 ,
+scope=list(lower=~1, upper=~X1+X2+X3+X4+X5+X6+X8))
+
+### backward
+step (reg.all, direction="backward")
+step (reg.all, direction="backward", k=log(dim(reg.all$model)[1]))
+step (reg.all, direction="backward", scale=sigmaHat(reg.all)^2 )
+ 
+```
+
+
+```{r}
+## MSPR, test data와 train data 나누기
+test<-read.table("CH09TA05.txt")
+names(test)<-c("X1","X2","X3","X4","X5","X6","X7","X8","Y","logY")
+reg1 <- lm(logY~X1+X2+X3+X8, data=ex)
+reg2 <- lm(logY~X1+X2+X3+X6+X8, data=ex)
+reg3 <- lm(logY~X1+X2+X3+X5+X6+X8, data=ex)
+
+MSE1<- sum((ex$logY-predict(reg1, newdata=ex))^2)/(54-5)
+MSE2<- sum((ex$logY-predict(reg2, newdata=ex))^2)/(54-6) 
+MSE3<- sum((ex$logY-predict(reg3, newdata=ex))^2)/(54-7)
+
+
+### compute mspr
+MSPR1<- sum( (test$logY - predict(reg1, newdata=test))^2)/54
+MSPR2<- sum( (test$logY - predict(reg2, newdata=test))^2)/54 
+MSPR3<- sum( (test$logY - predict(reg3, newdata=test))^2)/54
+
+###
+reg1.test <- lm(logY~X1+X2+X3+X8, ,data=test)
+summary(reg1.test)
+summary(reg1)
+
+```
+

@@ -1,0 +1,142 @@
+---
+title: "Regression6"
+author: "dlrmdwjd"
+date: "2022-07-17"
+output: word_document
+---
+
+```{r}
+fi05<-read.table("CH06FI05.txt")
+names(fi05)<-c("X1","X2","Y")
+library(car)
+library(plot3D)
+par(mfrow=c(2,2))
+with(data=fi05, scatter3D(X1, Y, X2, phi=20, theta=20, xlab="X1", ylab="X2", zlab="Y", pch=20,
+col=1))
+with(data=fi05, scatter3D(X1, Y, X2, phi=20, theta=40, xlab="X1", ylab="X2", zlab="Y", pch=20,
+col=1))
+with(data=fi05, scatter3D(X1, Y, X2, phi=20, theta=60, xlab="X1", ylab="X2", zlab="Y", pch=20,
+col=1))
+with(data=fi05, scatter3D(X1, Y, X2, phi=20, theta=80, xlab="X1", ylab="X2", zlab="Y", pch=20,
+col=1))
+
+pairs(fi05)
+
+##### 대각요소를 중심으로 X1과 X2는 Y와 양의 상관관계를 가진다. 타원 형태가 그려지면 바람직한 형태의 scatter plot이다. first order simple regression 하기에 나쁘지 않은 형태
+
+fi05.lm <- lm(Y~X1+X2, data=fi05)
+summary(fi05.lm)
+anova(fi05.lm)
+
+##### t value는 각각의 predictor가 0이냐 아니냐 판단해줌
+
+SSR <- 23371.8+643.5
+MSR = SSR/2
+MSR/121.2 ###### F STATISTIC (MSR/MSE)
+sqrt(121.2)
+
+resid <-fi05.lm$resid
+fitted <- fi05.lm$fitted
+mse <- summary(fi05.lm)$sigma^2
+resid
+fitted
+mse
+
+```
+
+```{r}
+## 교재 에 없음
+
+linear <-function(x,z) {
+  -68.8571+1.4546*x+9.3655*z }
+
+fitted.y <- with(data=fi05, outer(X1,X2,linear))
+fitted.y
+
+with(data=fi05,persp3D(X1, X2, fitted.y,col=1, theta =30, pi = 10))
+
+##### theta와 pi를 바꾸면 각도를 바꿔서 볼 수 있고, 이것이 regression plane이다.(response surface)
+
+```
+
+```{r}
+### matrix 에 적용시켜보기
+
+Dx <- cbind(rep(1,21), fi05$X1, fi05$X2)
+Dx
+###### design matrix
+beta <- solve(t(Dx)%*%Dx)%*%t(Dx)%*%fi05$Y
+beta
+
+summary(fi05.lm)
+
+cov.beta <- solve(t(Dx)%*%Dx)*mse
+cov.beta
+
+###### 한번에 이렇게 볼수도 있고
+sqrt(diag(cov.beta))
+
+###### 요소별로 뽑아보려면
+sqrt(cov.beta[1,1])
+sqrt(cov.beta[2,2])
+sqrt(cov.beta[3,3])
+```
+
+
+```{r}
+### Model diagnosis
+
+par(mfrow=c(2,2))
+qqnorm(resid)
+qqline(resid)
+plot(fitted, resid)
+with(plot(fitted,Y),data=fi05)
+boxCox(fi05.lm)
+ncvTest(fi05.lm)
+
+##### QQplot ok 다른것도 ok boxcox에서 1이 포함되어있으므로 trans 필요 없음, my regression not bad!
+
+##### f 검정은 summary이용
+##### ncv test에서 H0기각 불가, constant variance 만족
+
+bc<- powerTransform(fi05.lm)
+summary(bc)
+
+##### 귀무가설 기각불가, transformation 필요 없음
+
+### interval estimation
+
+esti.95 <- cbind(fi05, predict.lm(fi05.lm, newdata=fi05, se.fit=TRUE, interval="confidence"))
+esti.95
+
+X.h <- data.frame(1,X1=65.4,X2 = 17.6)
+predict.lm(fi05.lm, newdata=X.h, se.fit=TRUE, interval="confidence")
+
+###### data가 X1, X2가 x.h일때
+
+predict.lm(fi05.lm, newdata=X.h, se.fit=TRUE, interval="prediction")
+
+se.X.h <- c(sqrt(as.matrix(X.h)%*%cov.beta%*%t(as.matrix(X.h))))
+se.X.h
+
+#### se.fit과 동일한 값
+
+EY <- c(as.matrix(X.h)%*%fi05.lm$coef)
+EY
+
+#### 신뢰구간
+
+c(EY-qt(0.975,18)*se.X.h, EY+qt(0.975,18)*se.X.h)
+
+#### prediction
+
+se.X.h.pred <- c(sqrt(mse+as.matrix(X.h)%*%cov.beta%*%t(as.matrix(X.h))))
+se.X.h.pred
+
+##### prediction에 대한 std error는 11.34769, 평균에 대한 것은 2.76
+
+#### EY로 점추정량은 같음
+
+c(EY-qt(0.975,18)*se.X.h.pred, EY+qt(0.975,18)*se.X.h.pred)
+```
+

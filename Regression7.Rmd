@@ -1,0 +1,124 @@
+---
+title: "Regression7"
+author: "dlrmdwjd"
+date: "2022-07-17"
+output: word_document
+---
+
+```{r}
+### Anova 이용하기!!
+
+ta701 <- read.table("CH07TA01.txt")
+names(ta701)<-c("X1","X2","X3","Y")
+pairs(ta701)
+
+##### X1 & X2 high correlation, X3&Y no correlation
+
+cor(ta701)
+
+##### multi co exists.
+
+lm.123 <- lm(Y~X1+X2+X3, data = ta701)
+summary(lm.123)
+anova(lm.123)
+
+lm.12 <- lm(Y~X1+X2, data=ta701)
+summary(lm.12)
+anova(lm.12)
+
+lm.132 <- lm(Y~X1+X3+X2, data = ta701)
+anova(lm.132)
+summary(lm.132)
+(-1.106)^2 
+
+##### F value와 비슷해진다.
+
+XC <- ta701$X1 + ta701$X2
+XC
+
+lm.1_23 = lm(Y~XC+X3,data=ta701)
+lm.123 <- lm(Y~X1+X2+X3, data=ta701)
+summary(lm.1_23)
+
+anova(lm.1_23, lm.123)
+
+##### 귀무가설 기각 불가
+
+anova(lm.1_23)
+anova(lm.123)
+f_star = (108.56-98.4)/((17-16))/6.15
+f_star
+
+### test
+1-pf(1.65,1,16)
+
+##### 귀무가설 기각 불가
+
+```
+
+```{r}
+### H0 : X1, H1 : X1,X2,X3
+
+lm.1 <- lm(Y~X1, data =ta701)
+anova(lm.1,lm.123)
+
+### 귀무가설 기각
+
+anova(lm.1)
+anova(lm.123)
+
+##### df difference, 손수 계산해도 돼
+
+f_star2 = ((143.12-98.405)/2)/6.15
+f_star2
+```
+
+
+```{r}
+### standardized Regression - 1
+
+mean.x1 <- mean(ta701$X1) 
+var.x1 <- var(ta701$X1) 
+mean.x2 <- mean(ta701$X2) 
+var.x2 <- var(ta701$X2) 
+mean.x3 <- mean(ta701$X3) 
+var.x3 <- var(ta701$X3)
+mean.y <- mean(ta701$Y)
+var.y <- var(ta701$Y)
+X1s <- (ta701$X1-mean.x1)/sqrt(var.x1)
+X2s <- (ta701$X2-mean.x2)/sqrt(var.x2)
+X3s <- (ta701$X3-mean.x3)/sqrt(var.x3)
+Ys <- (ta701$Y-mean.y)/sqrt(var.y)
+stan.reg1 <- lm(Ys ~ X1s + X2s + X3s); summary(stan.reg1)
+
+
+### standardized Reg - 2
+
+ta701.s <- as.data.frame(scale(ta701))
+stan.reg2 <- lm(Y~X1+X2+X3, data=ta701.s); summary(stan.reg2)
+
+#### 두 방법 모두 결과는 같고, coefficient가 0으로 추정되는 결과를 얻는다.
+
+4.264e+00*sqrt(var.y)/sqrt(var.x1)
+##### lm.123$coef 랑 동일한 결과 가져야한다.
+lm.123$coef
+
+4.334092*sqrt(var.x1) / sqrt(var.y)
+
+```
+
+```{r}
+### Multi cor 문제
+
+pairs(ta701)
+cor(ta701)
+
+#### 둘을 통해서 확인할 수 있음
+
+summary(lm.123)
+#### coeff 회귀계수에 대해서 H0 기각 불가. but F test를 ㅁ보면 모순 관계가 생김. 이런 문제는 Multi co 때문에 생긴다.
+
+summary(lm.1_23)
+##### 이거로 해결 가능
+```
+

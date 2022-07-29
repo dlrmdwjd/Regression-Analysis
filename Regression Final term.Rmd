@@ -1,0 +1,247 @@
+---
+title: "regression Final"
+author: "dlrmdwjd"
+date: "2022-07-18"
+output: word_document
+---
+
+```{r}
+# 1. Commercial properties (6.18)
+
+data1 <- read.table("q1.txt"); 
+names(data1) <-c("Y","X1","X2","X3","X4")
+data1
+
+## (a) stem - and - leaf
+stem(data1$X1)
+stem(data1$X2)
+stem(data1$X3)
+stem(data1$X4)
+#### stem-and-leaf plot provides information about outliers.
+
+## (b) 
+pairs(data1)
+cor(data1)
+
+#### 
+
+## (c) fit regression model for four predictor variables
+lm.data1 <- lm(Y~X1+X2+X3+X4,data=data1)
+summary(lm.data1)
+
+#### estimated function : y = 12.2-0.142*X1+0.282*X2+0.6193*X3+7.924e-06*X4
+
+## (d)
+
+resid <- lm.data1$resid
+boxplot(resid)
+#### fairly symmetric (some outliers exist)
+
+## (f)
+#### check repeated data given x for y
+for (i in 1:81) {
+  
+}
+
+#### no 
+
+## (g)
+datat <- order(lm.data1$resid)
+###group1 <- datat[c(1:40)] ;group2 <- datat[c(41:81)]
+
+###d1 <- abs(group1 - median(group1))
+###d2 <- abs(group2 - median(group2))
+
+
+```
+
+```{r}
+#2. Refer to Commercial properties Problem 1
+
+## (a)
+lm.14 <- lm(Y~X1+X4, data = data1)
+summary(lm.14)
+
+#### yhat = -0.1145*X1 + 1.045e-05*X4 + 14.36
+
+## (b)
+#### coefficient in 1-(c) and 2-(a) are different
+
+## (c)
+
+lm.4 <- lm(Y~X4, data= data1)
+anova(lm.4)
+
+#### SSR(X4) = 67.775
+
+lm.3<-lm(Y~X3, data=data1)
+lm.34 <-lm(Y~X3+X4, data=data1)
+anova(lm.3,lm.34)
+
+#### SSR(X4 | X3) = 66.858 , SSR(X4) and SSR(X4 | X3) different
+
+lm_1 <- lm(Y~X1, data=data1)
+lm.13 <- lm(Y~X1+X3, data=data1)
+anova(lm_1)
+anova(lm.3, lm.13)
+
+#### SSR(X1) = 14.819 , SSR(X1 | X3) = 13.774, two values are different
+
+## (d)
+
+#### if predictors are strongly correlated, marginal predictor reducing the SSR , depending on other variables already in model. r_13 = -0.2526635, r_34 = 0.09061073
+```
+
+
+```{r}
+#.3
+
+data2 <- read.table("APPENC01.txt")
+names(data2) <- c("X_i","X1","X2","Y","X5","X3","X7","X4","X9","X10","X11","X12")
+data2
+
+## (a) fit first - order linear regression
+
+lm.1234 <- lm(Y~X1+X2+X3+X4, data= data2)
+lm.1234
+summary(lm.1234)
+
+#### y = 1.43301+0.28882*X1-0.01805*X2+0.01995*X3-0.28782*X4
+
+## (b) estimate the effect of medical school aff on infection risk using a 98 percent confidence interval. interpret
+
+anova(lm.1234)
+
+b4 <- -0.28782 
+length(data2$X4)
+s_b4 <- sqrt(sum((data2$X4-mean(data2$X4))^2)/112)
+s_b4
+est.b4 <- c(b4-qt(0.99, 108)*s_b4,b4+qt(0.99,108)*s_b4)
+est.b4
+#### estimate value included in (-1.1357818  0.5601418)
+
+## (c) add interaction 
+
+lm.int <- lm(Y~X1+X2+X3+X4+X2:X4+X3:X4, data=data2)
+lm.int
+summary(lm.int)
+
+#### regression function : y = -10.39627+0.26414*X1 + 0.28868*X2 -0.02383*X3 + 5.69520*X4 -0.15576*X2*X4+0.02406X3*X4
+
+#### H0 : B_34 = B_24 = 0 ; H1 : not both B_34 = 0 and B_24 = 0
+
+anova(lm.int)
+SSR_2434 = 1.744+3.453
+SSE_2434 = 122.047
+f_star = (SSR_2434/2)/(SSE_2434/106)
+f_star
+qf(0.9,2,106)
+
+#### conclude H0, which means B_34 = B_24 = 0
+
+```
+
+```{r}
+# 4. 
+data3 <- read.table("CH09PR15.txt")
+names(data3) <- c("Y","X1","X2","X3")
+data3
+
+## (a)
+
+pairs(data3)
+cor(data3)
+
+#### multicollinearity is not serious. In plot, Y&X1 and Y&X2 seems linearity
+
+## (b)
+library(car)
+lm.data3 <- lm(Y~X1+X2+X3,data=data3)
+par(mfrow=c(2,2))
+plot(lm.data3)
+lm.data3
+summary(lm.data3)
+ncvTest(lm.data3)
+powerTransform(lm.data3)
+boxCox(lm.data3)
+
+#### no need transform (constant variance check..)
+#### regress function : y = 120.0473-39.9393*X1 -0.7368*X2 + 0.7764*X3, no need to all predictor variables.
+
+## (c),(d)
+
+lm.full <- lm(Y~., data=data3)
+lm.a <- lm(Y~X1+X2+X3+X3^2+X1:X2, data=data3)
+lm.b <- lm(Y~X1+X2+X2^2+X3^2+X1:X2, data=data3)
+lm.c <- lm(Y~X1+X2+X3^2+X1:X2+X2^2, data=data3)
+
+extractAIC(lm.a, scale = sigmaHat(lm.full)^2)
+extractAIC(lm.b, scale = sigmaHat(lm.full)^2)
+extractAIC(lm.c, scale = sigmaHat(lm.full)^2)
+
+#### there is no difference in 3 models
+
+```
+
+```{r}
+# 5. 
+
+## (a)
+#### hard hat : E(Y) = (b0+b2)+b1*X1 , bump cap : E(Y) = (b0+b3)+b1*X1 none : E(Y) = b0+b1*X1
+
+## (b)
+### (1) we need to test, H0 : b3 >= 0 / H1:b3 < 0. if H0 is not concluded, we can say it is better to wear bump cap. (if H1 selected, slope increment : bump cap < none)
+### (2) we need to test, H0 : b2 >=0 / H1 : b2 <0 . if H0 is not concluded, we can say it is better to wear hard hat. (if H1 selected, slope increment : hard hat < none)
+
+
+```
+
+```{r}
+# 6. Assessed valuations
+data4 <- read.table("CH08PR24.txt")
+names(data4) <- c("Y", "X1", "X2")
+data4
+
+data4_1 <- data4[data4$X2==0,]
+data4_1
+
+data4_2 <- data4[data4$X2==1,]
+data4_2
+
+par(mfrow = c(2,2))
+plot(data4_1)
+plot(data4_2)
+
+## (b)
+lm.data4 <- lm(Y~X1+X2+X1:X2, data=data4)
+lm.data4
+
+#### regress function : Yhat= -126.905+ 2.776*X1+ 76.002*X2-1.107*X1X2
+#### H0 : b2=b3=0, H1: not both b2=0 & b3=0
+lm.data_a <- lm(Y~X2+X1:X2, data = data4)
+lm.data_b <- lm(Y~X1, data=data4)
+lm.data_1 <- lm(Y~X1+X2+X1:X2, data=data4)
+anova(lm.data_1)
+anova(lm.data_a)
+anova(lm.data_b)
+SSR_2121 <- 453.1+113.0
+SSE_1212 <- 909.1
+f_starr <- (SSR_2121/2)/(SSE_1212/60)
+f_starr
+qf(0.95,2,60)
+#### can't conclude H0.
+
+## (c)
+
+lm.data4_1 <- lm(Y~X1, data=data4_1)
+lm.data4_2 <- lm(Y~X1, data=data4_2)
+lm.data4_1
+lm.data4_2
+#### regression function : yhat = -126.905+2.776X1 , yhat = -50.884+1.668X1
+
+plot(data4_1$X1,data4_1$Y)
+abline(a = -126.905, b = 2.766, col=2)
+plot(data4_2$X1, data4_2$Y)
+abline(a = -50.884, b = 1.668, col=3)
+```
+

@@ -1,0 +1,123 @@
+---
+title: "Regression8"
+author: "dlrmdwjd"
+date: "2022-07-17"
+output: word_document
+---
+
+```{r}
+## polynomial regression
+
+ta801 <- read.table("CH08TA01.txt")
+names(ta801) <-c("Y","X1","X2")
+ta801
+
+x1 <- c(-1,0,1,-1,0,0,0,1,-1,0,1)
+x2 <- c(-1,-1,-1,0,0,0,0,0,1,1,1)
+
+cbind(ta801$X1,x1)
+cbind(ta801$X2,x2)
+
+ta801s <- as.data.frame(scale(ta801))
+
+ta801s
+
+mean(ta801s$X1)
+mean(ta801s$X2)
+
+### centering complete
+
+ta801t <- data.frame(ta801, x1=x1, x2=x2)
+
+### ta801t는 X1 X2를 code화 해서 x1, x2ㅡ를 뱉음
+
+
+cor(ta801t$X1, ta801t$X1^2)
+cor(ta801t$X2, ta801t$X2^2)
+cor(ta801t$x1, ta801t$x1^2)
+cor(ta801t$x2, ta801t$x2^2)
+cor(ta801s$X1, ta801s$X1^2)
+cor(ta801s$X2, ta801s$X2^2)
+
+## fit하기, polynomial regression에서는 I- function을 이용해서 제곱의 형태를 쓴다.
+
+fit0 <- lm(Y~x1+x2+I(x1^2)+I(x2^2)+x1*x2, data=ta801t) 
+fit0s <- lm(Y~X1+X2+I(X1^2)+I(X2^2)+X1*X2, data=ta801s) 
+fit0.ori <- lm(Y~X1+X2+I(X1^2)+I(X2^2)+X1*X2, data=ta801t) 
+summary(fit0); summary(fit0s); summary(fit0.ori)
+fit1 <- lm(Y~X1+X2, data = ta801)
+
+#### original x값은 유의하지 않게 나오는 반면 f는 유의하게 나옴 > multicoll 때문에
+
+## interaction 검정, smaller 모형을 fit하자
+
+fit0.smaller <- lm(Y~x1+x2, data=ta801t)
+summary(fit0.smaller)
+anova(fit0.smaller, fit1)
+
+#### Extra sum square
+7700.3-5240.4
+
+
+plot(fit0$fitted, fit0$resid, xlab="Fitted 0", ylab="Residual ") 
+qqnorm(fit0$resid); qqline(fit0$resid)
+
+plot(fit1$fitted, fit1$resid, xlab="Fitted 1", ylab="Residual ") 
+qqnorm(fit1$resid); qqline(fit1$resid)
+
+#### 추정이 안되는건 Multicoll 문제가 아주 심하다는 의미.
+
+
+```
+
+```{r}
+## soap data
+
+soap <- read.table("CH08TA05.txt"); names(soap)<-c("Y","X1","X2")
+soap
+
+#### X2를 factor로 바꿔줘야함.
+
+soap2 <- soap ; soap2$X2<-as.factor(soap$X2)
+
+soap2
+soap2$X2
+
+is.factor(soap2$X2)
+
+with(plot(X1,Y,pch=c(15,19)[X2], col=c(2,4)[X2]), data=soap2)
+legend(100,450, legend=c("Production Line1", "production line2"), pch=c(19,15), col= c(4,2))
+
+### blue spot > production line1; red box > production line2
+
+### 세가지 모형을 fit한다
+
+fit <- lm(Y~X1*X2, data = soap2)
+fit_1 <- lm(Y~X1, data=soap)
+fit_2 <- lm(Y~X1+X2, data=soap2)
+summary(fit_2)
+
+### fit2 <- lm(Y~X1+X2+X1:X2, data=soap2) ; summary(fit3)과 같다.
+
+
+anova(fit);anova(fit_1,fit);anova(fit_2,fit)
+#### interaction term 의미가 있나? no
+
+fit4 <- lm(Y~X1+X2+I(X1^2)+I(X1^3), data=soap2) ; summary(fit4)
+### 유의하지 않기 때문에 polynomial term 의미 없다! fit2가 best 모형이다!
+### fit2는 interaction이 없다(only X2), fit1은 no X2, no interaction
+
+## abline drawing
+
+abline(a=fit_2$coef[1]+fit_2$coef[3], b=fit_2$coef[2], col=4, lwd=2)
+
+#### a가 intercept b는 slope
+
+abline(a=fit_2$coef[1], b=fit_2$coef[2], col=2, lwd=2)
+
+summary(fit_2)
+
+### blue line - red line 차이가 53.12920
+
+```
+
